@@ -5,9 +5,9 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "pm2 start index.js --deep-monitoring --attach --name  INCONNU-XD",
-    "stop": "pm2 stop  INCONNU-XD",
-    "restart": "pm2 restart  INCONNU-XD"
+    "start": "pm2 start index.js --deep-monitoring --attach --name  GAMER-XMD",
+    "stop": "pm2 stop  GAMER-XMD",
+    "restart": "pm2 restart  GAMER-XMD"
   },
   "keywords": ["DARK-GAMER", "whatsapp-bot", "whatsapp md bot"],
   "author": "DARK GAMER",
