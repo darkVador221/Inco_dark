@@ -20,6 +20,7 @@ import moment from 'moment-timezone';
 import axios from 'axios';
 import config from './config.cjs';
 import pkg from './lib/autoreact.cjs';
+
 const { emojis, doReact } = pkg;
 const prefix = process.env.PREFIX || config.PREFIX;
 const sessionName = "session";
@@ -89,124 +90,114 @@ async function start() {
     try {
         const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
         const { version, isLatest } = await fetchLatestBaileysVersion();
-        console.log(`🤖 INCONNU-XD using WA v${version.join('.')}, isLatest: ${isLatest}`);
+        console.log(`🤖 GAMER-XMD using WA v${version.join('.')}, isLatest: ${isLatest}`);
         
-        const Matrix = makeWASocket({
+        const sock = makeWASocket({
             version,
             logger: pino({ level: 'silent' }),
             printQRInTerminal: useQR,
-            browser: ["INCONNU-XD", "safari", "3.3"],
+            browser: ["GAMER-XMD", "Safari", "3.3"],
             auth: state,
             getMessage: async (key) => {
-                if (store) {
-                    const msg = await store.loadMessage(key.remoteJid, key.id);
-                    return msg.message || undefined;
-                }
-                return { conversation: " cloid ai whatsapp user bot" };
+                return { conversation: "GAMER-XMD WhatsApp Bot" };
             }
         });
 
-        Matrix.ev.on('connection.update', (update) => {
+        sock.ev.on('connection.update', (update) => {
             const { connection, lastDisconnect } = update;
             if (connection === 'close') {
-                if (lastDisconnect.error?.output?.statusCode !== DisconnectReason.loggedOut) {
+                if (lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut) {
                     start();
                 }
             } else if (connection === 'open') {
                 if (initialConnection) {
-                    console.log(chalk.green("Connected Successfully INCONNU XD 🤍"));
-Matrix.newsletterFollow("120363397722863547@newsletter");                    
-                    Matrix.sendMessage(Matrix.user.id, { 
-                        image: { url: "https://files.catbox.moe/230q0c.jpg" }, 
-                        caption: `╓─────────────────╖
-│WELCOME TO INCONNU-XD
-╙─────────────────╜
-*⚡ Hello there User! 👋🏻*
+                    console.log(chalk.green("✅ Connected Successfully to GAMER-XMD!"));
+                    sock.sendMessage(sock.user.id, { 
+                        image: { url: "https://files.catbox.moe/zzne7x.jpeg" }, 
+                        caption: `╓─────────────────────────────╖
+┃     𝗪𝗘𝗟𝗖𝗢𝗠𝗘 𝗧𝗢 𝗚𝗔𝗠𝗘𝗥–𝗫𝗠𝗗 🤖
+╙─────────────────────────────╜
 
-════════════════════
-⚡ CHANNEL : https://whatsapp.com/channel/0029Vb6T8td5K3zQZbsKEU1R
+👤 *Hello, welcome!*
 
-═══════════════════
-*⚡ Your Prefix:* = *${prefix}*
-═══════════════════
+━━━━━━━━━━━━━━━━━━━━━━
+📢 *Channel WhatsApp* :
+https://whatsapp.com/channel/0029VbAF9iTJUM2aPl9plJ2U
 
-⌛ REPO : https://github.com/INCONNU-BOY/INCONNU-XD-V1
+💻 *Repository* :
+https://github.com/darkVador221/Inco_dark
+━━━━━━━━━━━━━━━━━━━━━━
 
-╚══════════════════╝
-       ©️INCONNU BOY TECH`
+⚡ *Prefix* : ${prefix}
+🔒 *Session active. Don't share it!*
+
+─ Powered by DARK GAMER ⚔`
                     });
                     initialConnection = false;
                 } else {
-                    console.log(chalk.blue("♻️ Connection reestablished after restart."));
+                    console.log(chalk.blue("♻️ Reconnected to WhatsApp"));
                 }
             }
         });
 
-        Matrix.ev.on('creds.update', saveCreds);
-
-        Matrix.ev.on("messages.upsert", async chatUpdate => await Handler(chatUpdate, Matrix, logger));
-        Matrix.ev.on("call", async (json) => await Callupdate(json, Matrix));
-        Matrix.ev.on("group-participants.update", async (messag) => await GroupUpdate(Matrix, messag));
+        sock.ev.on('creds.update', saveCreds);
+        sock.ev.on("messages.upsert", async chatUpdate => await Handler(chatUpdate, sock, logger));
+        sock.ev.on("call", async json => await Callupdate(json, sock));
+        sock.ev.on("group-participants.update", async msg => await GroupUpdate(sock, msg));
 
         if (config.MODE === "public") {
-            Matrix.public = true;
-        } else if (config.MODE === "private") {
-            Matrix.public = false;
+            sock.public = true;
+        } else {
+            sock.public = false;
         }
 
-        Matrix.ev.on('messages.upsert', async (chatUpdate) => {
+        sock.ev.on('messages.upsert', async (chatUpdate) => {
             try {
                 const mek = chatUpdate.messages[0];
-                console.log(mek);
-                if (!mek.key.fromMe && config.AUTO_REACT) {
-                    console.log(mek);
-                    if (mek.message) {
-                        const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
-                        await doReact(randomEmoji, mek, Matrix);
-                    }
+                if (!mek.key.fromMe && config.AUTO_REACT && mek.message) {
+                    const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+                    await doReact(randomEmoji, mek, sock);
                 }
             } catch (err) {
-                console.error('Error during auto reaction:', err);
+                console.error('Auto-reaction error:', err);
             }
         });
-        
-        Matrix.ev.on('messages.upsert', async (chatUpdate) => {
+
+        sock.ev.on('messages.upsert', async (chatUpdate) => {
             try {
                 const mek = chatUpdate.messages[0];
                 const fromJid = mek.key.participant || mek.key.remoteJid;
-                if (!mek || !mek.message) return;
-                if (mek.key.fromMe) return;
-                if (mek.message?.protocolMessage || mek.message?.ephemeralMessage || mek.message?.reactionMessage) return; 
-                if (mek.key && mek.key.remoteJid === 'status@broadcast' && config.AUTO_STATUS_SEEN) {
-                    await Matrix.readMessages([mek.key]);
-                    
+                if (!mek || !mek.message || mek.key.fromMe) return;
+                if (mek.message.protocolMessage || mek.message.ephemeralMessage || mek.message.reactionMessage) return;
+                if (mek.key.remoteJid === 'status@broadcast' && config.AUTO_STATUS_SEEN) {
+                    await sock.readMessages([mek.key]);
                     if (config.AUTO_STATUS_REPLY) {
-                        const customMessage = config.STATUS_READ_MSG || '✅ Auto Status Seen Bot By INCONNU-XD';
-                        await Matrix.sendMessage(fromJid, { text: customMessage }, { quoted: mek });
+                        const msg = config.STATUS_READ_MSG || '👀 Status vu par GAMER-XMD';
+                        await sock.sendMessage(fromJid, { text: msg }, { quoted: mek });
                     }
                 }
             } catch (err) {
-                console.error('Error handling messages.upsert event:', err);
+                console.error('Status seen error:', err);
             }
         });
 
     } catch (error) {
-        console.error('Critical Error:', error);
+        console.error('🚨 Fatal bot error:', error);
         process.exit(1);
     }
 }
 
 async function init() {
     if (fs.existsSync(credsPath)) {
-        console.log("🔒 Session file found, proceeding without QR code.");
+        console.log("🟢 Session creds found — starting without QR.");
         await start();
     } else {
         const sessionDownloaded = await downloadSessionData();
         if (sessionDownloaded) {
-            console.log("🔒 Session downloaded, starting bot.");
+            console.log("🟢 Session loaded from MEGA — starting bot.");
             await start();
         } else {
-            console.log("No session found or downloaded, QR code will be printed for authentication.");
+            console.log("🟡 No session — QR code will be printed.");
             useQR = true;
             await start();
         }
@@ -216,9 +207,9 @@ async function init() {
 init();
 
 app.get('/', (req, res) => {
-    res.send('Hello World!');
+    res.send('🟢 GAMER-XMD Bot is Live');
 });
 
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    console.log(`🚀 GAMER-XMD server running on port ${PORT}`);
 });
